@@ -1,0 +1,51 @@
+#!/bin/bash
+
+if [ $# != 1 ]
+then
+        echo Error! not enough arguments.
+        exit 1
+fi
+
+if [ -d "log" ]
+then
+        echo Somthing went wrong.
+        exit 1
+else
+        mkdir log
+        if [ $? != 0 ]
+        then
+                echo "Could'nt make directory"
+                exit 1
+        fi
+
+        count_compile=0
+        count_inout=0
+        count_mem=0
+        input=`cat $1`
+        len=(`wc -l $1`)
+        cd log
+        for  i  in `seq 1 $len`
+        do
+                line=`head -$i <<< $input | tail -1`
+                dsc=`cut -f1 -d@ <<<  $line`
+                prog=`cut -f2 -d@ <<< $line`
+                in=`cut -f3 -d@ <<< $line`
+                out=`cut -f4 -d@ <<< $line`
+                echo $i:$dsc
+                ../testCompile $i.compile ../$prog
+                (( count_compile+=$? ))
+
+                ../testinOut $i.inout ../$prog ../$in ../$out
+                (( count_inout+=$? ))
+
+                ../testMem  $i.memory ../$prog ../$in
+                (( count_mem+=$? ))
+
+        done
+        cd $PWD
+        echo Num of tests preformed: $(( $len * 3 ))
+        echo Num of tests succeeded: $(( ( $len * 3) - $count_mem - $count_inout - $count_compile ))
+
+fi
+
+                                                                          
